@@ -21,32 +21,54 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watchEffect, onMounted } from "vue";
 import PostList from "@/components/PostList.vue";
 import MyDivider from "@/components/MyDivider.vue";
 import { useRoute, useRouter } from "vue-router";
 
-const activeKey = ref("post");
 const router = useRouter();
 const route = useRoute();
-alert(route.params.category);
-/*
-useRouter() 用于控制路由行为，useRoute() 用于获取当前路由的状态
- */
+
+// 从路由获取 `category` 和 `text` 查询参数
+const activeKey = ref(route.params.category || "post"); // 默认为 "post"
 const searchParams = ref({
-  text: "",
+  text: route.query.text || "", // 默认为空
+  pageSize: 10,
+  pageNum: 1,
 });
-const onSearch = (value: string) => {
-  alert(value);
-  router.push({
-    query: searchParams.value,
-  });
+const initSearchParams = {
+  text: "",
+  pageSize: 10,
+  pageNum: 1,
 };
-const onTabChange = (key: string) => {
+// 监听路由的变化，更新组件状态
+watchEffect(() => {
+  // 更新 searchParams.text 来保持和路由的同步
+  searchParams.value = {
+    ...initSearchParams,
+    text: route.query.text,
+  } as any;
+  activeKey.value = route.params.category || "post";
+});
+
+// 搜索时同步路由参数
+const onSearch = (value: string) => {
+  searchParams.value.text = value;
   router.push({
-    path: `/${key}`,
-    query: searchParams.value,
+    query: searchParams.value, // 更新查询参数
+    pageSize: 10,
+    pageNum: 1,
+  }) as any;
+};
+
+// 选项卡切换时同步路由
+const onTabChange = (key: string) => {
+  activeKey.value = key;
+  router.push({
+    path: `/${key}`, // 切换到相应的路由路径
+    query: searchParams.value, // 保持当前的搜索参数
   });
 };
 </script>
+
 <style scoped></style>
