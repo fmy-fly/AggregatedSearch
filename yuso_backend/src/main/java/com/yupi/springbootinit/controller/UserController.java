@@ -48,10 +48,19 @@ import static com.yupi.springbootinit.service.impl.UserServiceImpl.SALT;
  * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
  * @from <a href="https://yupi.icu">编程导航知识星球</a>
  */
+
+/**
+ * 用户接口
+ *
+ * @author <a href="https://github.com/liyupi">程序员鱼皮</a>
+ * @from <a href="https://yupi.icu">编程导航知识星球</a>
+ */
 @RestController
 @RequestMapping("/user")
 @Slf4j
 public class UserController {
+
+    // [加入编程导航](https://yupi.icu) 入门捷径+交流答疑+项目实战+求职指导，帮你自学编程不走弯路
 
     @Resource
     private UserService userService;
@@ -108,7 +117,7 @@ public class UserController {
      */
     @GetMapping("/login/wx_open")
     public BaseResponse<LoginUserVO> userLoginByWxOpen(HttpServletRequest request, HttpServletResponse response,
-            @RequestParam("code") String code) {
+                                                       @RequestParam("code") String code) {
         WxOAuth2AccessToken accessToken;
         try {
             WxMpService wxService = wxOpenConfig.getWxMpService();
@@ -172,10 +181,6 @@ public class UserController {
         }
         User user = new User();
         BeanUtils.copyProperties(userAddRequest, user);
-        // 默认密码 12345678
-        String defaultPassword = "12345678";
-        String encryptPassword = DigestUtils.md5DigestAsHex((SALT + defaultPassword).getBytes());
-        user.setUserPassword(encryptPassword);
         boolean result = userService.save(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(user.getId());
@@ -208,7 +213,7 @@ public class UserController {
     @PostMapping("/update")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest,
-            HttpServletRequest request) {
+                                            HttpServletRequest request) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -261,7 +266,7 @@ public class UserController {
     @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<User>> listUserByPage(@RequestBody UserQueryRequest userQueryRequest,
-            HttpServletRequest request) {
+                                                   HttpServletRequest request) {
         long current = userQueryRequest.getCurrent();
         long size = userQueryRequest.getPageSize();
         Page<User> userPage = userService.page(new Page<>(current, size),
@@ -278,7 +283,7 @@ public class UserController {
      */
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest,
-            HttpServletRequest request) {
+                                                       HttpServletRequest request) {
         if (userQueryRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -286,11 +291,7 @@ public class UserController {
         long size = userQueryRequest.getPageSize();
         // 限制爬虫
         ThrowUtils.throwIf(size > 20, ErrorCode.PARAMS_ERROR);
-        Page<User> userPage = userService.page(new Page<>(current, size),
-                userService.getQueryWrapper(userQueryRequest));
-        Page<UserVO> userVOPage = new Page<>(current, size, userPage.getTotal());
-        List<UserVO> userVO = userService.getUserVO(userPage.getRecords());
-        userVOPage.setRecords(userVO);
+        Page<UserVO> userVOPage = userService.listUserVOByPage(userQueryRequest);
         return ResultUtils.success(userVOPage);
     }
 
@@ -305,7 +306,7 @@ public class UserController {
      */
     @PostMapping("/update/my")
     public BaseResponse<Boolean> updateMyUser(@RequestBody UserUpdateMyRequest userUpdateMyRequest,
-            HttpServletRequest request) {
+                                              HttpServletRequest request) {
         if (userUpdateMyRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -318,3 +319,4 @@ public class UserController {
         return ResultUtils.success(true);
     }
 }
+

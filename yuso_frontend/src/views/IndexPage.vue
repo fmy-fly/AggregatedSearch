@@ -7,14 +7,13 @@
       size="large"
       @search="onSearch"
     />
-    {{ JSON.stringify(postList) }}
     <my-divider />
     <a-tabs v-model:activeKey="activeKey" @change="onTabChange">
       <a-tab-pane key="post" tab="文章">
         <PostList :postList="postList"></PostList>
       </a-tab-pane>
-      <a-tab-pane key="picture" tab="图片" force-render
-        >Content of Tab Pane 2
+      <a-tab-pane key="picture" tab="图片" force-render>
+        <PictureList :picture-list="pictureList"></PictureList>
       </a-tab-pane>
       <a-tab-pane key="user" tab="用户">
         <UserList :user-list="userList"></UserList>
@@ -31,6 +30,7 @@ import { useRoute, useRouter } from "vue-router";
 
 import myAxios from "@/plugins/myAxios";
 import UserList from "@/components/UserList.vue";
+import PictureList from "@/components/PictureList.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -39,37 +39,34 @@ const route = useRoute();
 获取帖子列表
  */
 const postList = ref([]);
-myAxios.post("post/list/page/vo", {}).then((res: any) => {
-  postList.value = res.records;
-  console.log(res);
-});
-
-/*
-获取帖子列表
- */
 const userList = ref([]);
-myAxios.post("user/list/page/vo", {}).then((res: any) => {
-  userList.value = res.records;
-  console.log(res);
-});
+const pictureList = ref([]);
+
+const loadData = (params: any) => {
+  const query = {
+    ...params,
+    searchText: params.text,
+  };
+  myAxios.post("search/all", query).then((res) => {
+    postList.value = res.postList;
+    userList.value = res.userList;
+    pictureList.value = res.pictureList;
+  });
+};
 
 // 从路由获取 `category` 和 `text` 查询参数
 const activeKey = ref(route.params.category || "post"); // 默认为 "post"
 const searchParams = ref({
-  text: route.query.text || "", // 默认为空
+  text: "", // 默认为空
   pageSize: 10,
   pageNum: 1,
 });
-const initSearchParams = {
-  text: "",
-  pageSize: 10,
-  pageNum: 1,
-};
 // 监听路由的变化，更新组件状态
 watchEffect(() => {
+  loadData(searchParams.value);
   // 更新 searchParams.text 来保持和路由的同步
+  console.log("change");
   searchParams.value = {
-    ...initSearchParams,
     text: route.query.text,
   } as any;
   activeKey.value = route.params.category || "post";
@@ -78,6 +75,7 @@ watchEffect(() => {
 // 搜索时同步路由参数
 const onSearch = (value: string) => {
   searchParams.value.text = value;
+  loadData(searchParams.value);
   router.push({
     query: searchParams.value, // 更新查询参数
     pageSize: 10,
