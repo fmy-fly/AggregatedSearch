@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watchEffect, onMounted } from "vue";
+import { ref, watchEffect, onMounted, watch } from "vue";
 import PostList from "@/components/PostList.vue";
 import MyDivider from "@/components/MyDivider.vue";
 import { useRoute, useRouter } from "vue-router";
@@ -31,6 +31,7 @@ import { useRoute, useRouter } from "vue-router";
 import myAxios from "@/plugins/myAxios";
 import UserList from "@/components/UserList.vue";
 import PictureList from "@/components/PictureList.vue";
+import { message } from "ant-design-vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -41,16 +42,42 @@ const route = useRoute();
 const postList = ref([]);
 const userList = ref([]);
 const pictureList = ref([]);
-
-const loadData = (params: any) => {
+/**
+ * 加载聚合数据
+ * @param params
+ */
+const loadAllData = (params: any) => {
   const query = {
     ...params,
     searchText: params.text,
+    type: params.type,
   };
   myAxios.post("search/all", query).then((res) => {
     postList.value = res.postList;
     userList.value = res.userList;
     pictureList.value = res.pictureList;
+  });
+};
+/**
+ * 加载单类数据
+ * @param params
+ */
+const loadData = (params: any) => {
+  const query = {
+    ...params,
+    searchText: params.text,
+    type: params.type,
+  };
+
+  myAxios.post("search/all", query).then((res: any) => {
+    const type = query.type;
+    if (type === "post") {
+      postList.value = res.dataList;
+    } else if (type === "user") {
+      userList.value = res.dataList;
+    } else if (type === "picture") {
+      pictureList.value = res.dataList;
+    }
   });
 };
 
@@ -60,21 +87,24 @@ const searchParams = ref({
   text: "", // 默认为空
   pageSize: 10,
   pageNum: 1,
+  type: "post",
 });
 // 监听路由的变化，更新组件状态
-watchEffect(() => {
-  loadData(searchParams.value);
-  // 更新 searchParams.text 来保持和路由的同步
-  console.log("change");
-  searchParams.value = {
-    text: route.query.text,
-  } as any;
-  activeKey.value = route.params.category || "post";
-});
+watch(
+  () => route.params.category,
+  (newCategory) => {
+    searchParams.value.type = newCategory || "post"; // 更新 searchParams.type
+    activeKey.value = newCategory || "post"; // 更新 activeKey
+    loadData(searchParams.value);
+  },
+  { immediate: true } // 初次渲染时也执行
+);
 
 // 搜索时同步路由参数
 const onSearch = (value: string) => {
   searchParams.value.text = value;
+  searchParams.value.type = route.params.category || "post";
+  console.log(1);
   loadData(searchParams.value);
   router.push({
     query: searchParams.value, // 更新查询参数

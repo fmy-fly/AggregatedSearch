@@ -16,7 +16,8 @@ public enum SearchTypeEnum {
 
     POST("帖子", "post"),
     PICTURE("图片", "picture"),
-    USER("用户", "user");
+    USER("用户", "user"),
+    VIDEO("视频", "video");
     private final String text;
 
     private final String value;
